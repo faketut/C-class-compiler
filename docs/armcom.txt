@@ -1,0 +1,47 @@
+ARMCOM (.com) executable format
+=================================
+
+ARMCOM is the CS241 ARM64 executable format: machine code plus a relocation and linking table. Three parts appear in order: header, program, footer.
+
+
+1. Header
+---------
+
+Five halfwords, in this order:
+
+- Magic: halfword 0x14000005 — encoding of the ARM64 instruction b 20 (branch past the header metadata).
+- EndModule: one word (two halfwords) — total size of the .com file in bytes.
+- EndCode: one word (two halfwords) — size in bytes of header plus machine code (byte offset of the first footer byte).
+
+
+2. Program
+----------
+
+ARM64 instructions arranged so they execute correctly when loaded so that user code starts at RAM address 0x14 (header size). Loading the entire file at address 0x0 is the usual model: execution begins at 0x0, takes the branch in the header, then continues at 0x14 and above.
+
+
+3. Footer (relocation and linking table)
+----------------------------------------
+
+Zero or more entries.
+
+Relocation entry (two words)
+
+- Format code: 0x1.
+- Location: byte offset in the .com where the relocatable value is stored.
+
+External symbol reference — import (needs resolution from another .com)
+
+- Format code: 0x11.
+- Location: byte offset where the symbol’s value will be written once known.
+- Length: length of the symbol name.
+- Name: one character per word.
+
+External symbol definition — export
+
+- Format code: 0x12.
+- Location: byte offset where the symbol is defined in this file.
+- Length: length of the symbol name.
+- Name: one character per word.
+
+Location fields are byte offsets from the start of the ARMCOM file, not from the start of the program section alone. So a patch site at offset d within the instruction area has location 0x14 + d (using 0x14 as the header size from the load model above).

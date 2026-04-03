@@ -1,0 +1,8 @@
+long wain(long* a, long b) {
+  long* last = NULL;
+  last = a+b-1;
+  while(a < last) {
+    a = a+1;
+  }
+  return *a;
+}

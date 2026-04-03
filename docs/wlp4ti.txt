@@ -1,0 +1,197 @@
+WLP4 Typed Intermediate Format (.wlp4ti)
+========================================
+
+A `.wlp4ti` file is a `.wlp4i` parse tree with **type annotations** on expression-related nodes, produced after semantic analysis. Traversal is the same preorder as `.wlp4i`.
+
+Annotation rules
+----------------
+
+**Terminals:** After `KIND lexeme`, if the kind is `NUM` or `NULL`, or if the kind is `ID` and the identifier is a **variable** (not a procedure name), append ` : long` or ` : long*`. Then newline.
+
+**Nonterminals:** Print the production line; if the LHS is `expr`, `term`, `factor`, or `lvalue`, append ` : long` or ` : long*`. Then newline; recurse on children left to right.
+
+Example
+-------
+
+Program:
+
+  long wain(long* start, long size) {
+    long* end = NULL;
+    end = start + size;
+    while(start < end) { println(*start); }
+    return 241;
+  }
+
+Untyped (`.wlp4i`):
+
+start BOF procedures EOF
+BOF BOF
+procedures main
+main LONG WAIN LPAREN dcl COMMA dcl RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE
+LONG long
+WAIN wain
+LPAREN (
+dcl type ID
+type LONG STAR
+LONG long
+STAR *
+ID start
+COMMA ,
+dcl type ID
+type LONG
+LONG long
+ID size
+RPAREN )
+LBRACE {
+dcls dcls dcl BECOMES NULL SEMI
+dcls .EMPTY
+dcl type ID
+type LONG STAR
+LONG long
+STAR *
+ID end
+BECOMES =
+NULL NULL
+SEMI ;
+statements statements statement
+statements statements statement
+statements .EMPTY
+statement lvalue BECOMES expr SEMI
+lvalue ID
+ID end
+BECOMES =
+expr expr PLUS term
+expr term
+term factor
+factor ID
+ID start
+PLUS +
+term factor
+factor ID
+ID size
+SEMI ;
+statement WHILE LPAREN test RPAREN LBRACE statements RBRACE
+WHILE while
+LPAREN (
+test expr LT expr
+expr term
+term factor
+factor ID
+ID start
+LT <
+expr term
+term factor
+factor ID
+ID end
+RPAREN )
+LBRACE {
+statements statements statement
+statements .EMPTY
+statement PRINTLN LPAREN expr RPAREN SEMI
+PRINTLN println
+LPAREN (
+expr term
+term factor
+factor STAR factor
+STAR *
+factor ID
+ID start
+RPAREN )
+SEMI ;
+RBRACE }
+RETURN return
+expr term
+term factor
+factor NUM
+NUM 241
+SEMI ;
+RBRACE }
+EOF EOF
+
+Typed (`.wlp4ti`):
+
+start BOF procedures EOF
+BOF BOF
+procedures main
+main LONG WAIN LPAREN dcl COMMA dcl RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE
+LONG long
+WAIN wain
+LPAREN (
+dcl type ID
+type LONG STAR
+LONG long
+STAR *
+ID start : long*
+COMMA ,
+dcl type ID
+type LONG
+LONG long
+ID size : long
+RPAREN )
+LBRACE {
+dcls dcls dcl BECOMES NULL SEMI
+dcls .EMPTY
+dcl type ID
+type LONG STAR
+LONG long
+STAR *
+ID end : long*
+BECOMES =
+NULL NULL : long*
+SEMI ;
+statements statements statement
+statements statements statement
+statements .EMPTY
+statement lvalue BECOMES expr SEMI
+lvalue ID : long*
+ID end : long*
+BECOMES =
+expr expr PLUS term : long*
+expr term : long*
+term factor : long*
+factor ID : long*
+ID start : long*
+PLUS +
+term factor : long
+factor ID : long
+ID size : long
+SEMI ;
+statement WHILE LPAREN test RPAREN LBRACE statements RBRACE
+WHILE while
+LPAREN (
+test expr LT expr
+expr term : long*
+term factor : long*
+factor ID : long*
+ID start : long*
+LT <
+expr term : long*
+term factor : long*
+factor ID : long*
+ID end : long*
+RPAREN )
+LBRACE {
+statements statements statement
+statements .EMPTY
+statement PRINTLN LPAREN expr RPAREN SEMI
+PRINTLN println
+LPAREN (
+expr term : long
+term factor : long
+factor STAR factor : long
+STAR *
+factor ID : long*
+ID start : long*
+RPAREN )
+SEMI ;
+RBRACE }
+RETURN return
+expr term : long
+term factor : long
+factor NUM : long
+NUM 241 : long
+SEMI ;
+RBRACE }
+EOF EOF
+
+See `wlp4i.txt` for the general untyped tree format.

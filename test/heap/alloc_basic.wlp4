@@ -1,0 +1,10 @@
+long wain(long a, long b) {
+  long* p = NULL;
+  long x = 0;
+  p = new long[2];
+  *p = a;
+  *(p+1) = b;
+  x = *p;
+  delete [] p;
+  return x;
+}

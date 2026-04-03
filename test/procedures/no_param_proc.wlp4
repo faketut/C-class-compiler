@@ -1,0 +1,2 @@
+long p() { return 241; }
+long wain(long a, long b) { return p(); }

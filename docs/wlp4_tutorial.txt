@@ -1,0 +1,101 @@
+WLP4 for C/C++ Programmers (Overview)
+=======================================
+
+WLP4 programs are a **strict subset** of C++-like syntax: a list of procedures, ending with **`wain`** (the entry point). `wain` takes two parameters: first type `long` or `long*`, second type `long`. Every procedure returns `long`.
+
+Allowed features
+----------------
+
+- Types: `long`, `long*`.
+- Declarations: one variable per `dcl`, initialized with a **numeric constant** or `NULL`. All declarations must appear **before** any statements in a function.
+- Statements: `if` (**must** include `else`), `while`, `return` (**only** as the **last** statement in the function), `println`, `putchar`, assignment `=`, `delete []`.
+- `if` / `while` bodies must use `{ }`.
+- Expressions: identifiers, decimal literals (no unary `+`/`-` on literals in the grammar—use `0-1` for negative), calls, `new`, unary `&` and `*`, binary `+ - * / % == != <= >= < >`. No `&&`, `||`, or `else if`.
+- “Arrays” via `new long[n]` and pointer arithmetic only—no `[]` subscript operator.
+- Comments: `//` through end of line.
+
+I/O
+---
+
+- `println(expr);` — print `long` in decimal, then newline.
+- `putchar(expr);` — low 8 bits of `long` to stdout.
+- `getchar()` — returns a `long` (low byte from stdin), or **-1** at EOF.
+
+Example: exponent (0 ≤ a,b < 10), else -1
+-----------------------------------------
+
+long wain(long a, long b) {
+   long counter = 0;
+   long product = 0;
+   product = 0-1;
+   if (a >= 0) {
+      if (b >= 0) {
+         if (a < 10) {
+            if (b < 10) {
+               product = 1;
+               counter = 0;
+               while (counter < b) {
+                  product = product * a;
+                  counter = counter + 1;
+               }
+            } else {}
+         } else {}
+      } else {}
+   } else {}
+   return product;
+}
+
+Common differences from C/C++
+-----------------------------
+
+**Single return at end**
+
+long max(long a, long b) {
+  long answer = 0;
+  if (a > b) { answer = a; } else { answer = b; }
+  return answer;
+}
+
+**Declarations first; numeric/NULL init only**
+
+long average(long a, long b) {
+  long sum = 0;
+  long avg = 0;
+  sum = a + b;
+  avg = sum / 2;
+  return avg;
+}
+
+**No `&&` / `||` — nest `if`**
+
+long max3(long a, long b, long c) {
+  long answer = 0;
+  if (a > b) {
+    if (a > c) { answer = a; } else { answer = c; }
+  } else {
+    if (b > c) { answer = b; } else { answer = c; }
+  }
+  return answer;
+}
+
+**Indexing via pointers**
+
+long getlast(long* begin, long size) {
+  return *(begin + size - 1);
+}
+
+**`new` / `delete []`** — `new long[n]` allocates `n` words; access via `*(p + i)`.
+
+long wain(long* begin, long size) {
+  long* copy = NULL;
+  long i = 0;
+  copy = new long[size];
+  while(i < size) {
+    *(copy+i) = *(begin+i);
+    i = i + 1;
+  }
+  delete [] copy;
+  return 0;
+}
+
+For the normative lexical grammar, CFG, semantics, and runtime shells, see `wlp4.txt`.

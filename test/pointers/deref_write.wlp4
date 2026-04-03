@@ -1,0 +1,7 @@
+long wain(long a, long b) {
+  long v = 0;
+  long* p = NULL;
+  p = &v;
+  *p = a;
+  return *p;
+}

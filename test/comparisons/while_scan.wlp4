@@ -1,0 +1,10 @@
+long wain(long* a, long b) {
+  long sum = 0;
+  long* p = NULL;
+  p = a;
+  while (p < a+b) {
+    sum = sum + *p;
+    p = p+1;
+  }
+  return sum;
+}

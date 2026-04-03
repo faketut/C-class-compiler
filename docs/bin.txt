@@ -1,0 +1,120 @@
+Toolchain (bin/)
+=====================
+
+Built by build-toolchain.sh from src/*.cc into bin/. To prefer these binaries in your shell: source ./use-local-tools.sh
+
+Pipeline:
+
+  wlp4scan < PROG.wlp4 | wlp4parse | wlp4type | wlp4gen > PROG.asm
+
+Reference compiler: wlp4c reads WLP4 source and emits machine code in one step (see below). Language and intermediate formats: wlp4.txt, wlp4i.txt, wlp4ti.txt.
+
+
+wlp4scan
+--------
+
+Usage: wlp4scan < PROGRAM.wlp4 > TOKENS.scan
+
+- Input: WLP4 source (ASCII).
+- Output: one token per line — TOKEN_KIND lexeme (kind in ALL CAPS, e.g. LONG, ID, LPAREN; lexeme is the exact source spelling).
+- Whitespace and // line comments are discarded (no output lines for them).
+- Failure: message containing ERROR on standard error; non-zero exit.
+
+Source: src/wlp4scan.cc
+
+
+wlp4parse
+---------
+
+Usage: wlp4parse < TOKENS.scan > PROGRAM.wlp4i
+
+- Input: token stream as produced by wlp4scan.
+- Output: preorder parse tree in .wlp4i form (each grammar rule line followed by nested subtrees for its RHS symbols). See wlp4i.txt.
+- Failure: error on standard error; non-zero exit.
+
+Source: src/wlp4parse.cc
+
+
+wlp4type
+--------
+
+Usage: wlp4type < PROGRAM.wlp4i > PROGRAM.wlp4ti
+
+- Input: .wlp4i tree.
+- Output: same shape with type annotations on expression-related nodes (long vs long*). See wlp4ti.txt.
+- Performs semantic and type checking per wlp4.txt.
+- Failure: error on standard error; non-zero exit.
+
+Source: src/wlp4type.cc
+
+
+wlp4gen
+-------
+
+Usage: wlp4gen < PROGRAM.wlp4ti > PROGRAM.asm
+
+- Input: .wlp4ti typed tree.
+- Output: ARM64 assembly for linkasm.
+- May emit .import lines for runtime helpers (init, new, delete, print) when the program uses them.
+- Assemble and link (e.g. to .com) before running under arm64emu.
+
+Source: src/wlp4gen.cc
+
+
+wlp4c
+-------------------------------------
+
+Usage:
+
+  wlp4c < PROGRAM.wlp4 > OUTPUT.bin
+
+- Input: WLP4 source on standard input (not a token stream, .wlp4i, or .wlp4ti). The tool performs scanning, parsing, semantic analysis, and code generation internally.
+- Output: compiled ARM64 machine code on standard output, suitable for arm64emu and related * tools.
+
+Example program (entry point must be wain per WLP4; not main):
+
+  long wain(long a, long b) {
+    return a;
+  }
+
+wlp4c enforces the language’s naming and typing rules. Programs that fail semantic analysis are rejected, so you can use it to sanity-check that a WLP4 program is semantically valid before or alongside debugging your own compiler pipeline.
+
+
+arm64emu
+----------------------------------------
+
+Usage:
+
+  arm64emu [-a] [-i] PROGRAM.bin [x0 value] [x1 value] ...
+
+Purpose: run a compiled ARM64 machine-language file (e.g. output from wordasm / linkasm after assembling your generated .asm). By default the program is loaded at address 0x00.
+
+Arguments after PROGRAM.bin are decimal integers placed in x0, x1, x2, … before execution:
+
+  arm64emu program.bin 10 3 5   # x0=10, x1=3, x2=5
+
+Options:
+
+- -a — “array” mode: pack the extra numeric arguments into memory, put the array’s base address in x0 and the element count in x1 (for longer argv-style inputs).
+- -i — interactive / single-step mode for debugging (step through execution).
+
+The emulator can read from standard input as documented for your build.
+
+On exit (normal or crash), register state is printed to standard error.
+
+Example (add x0 and x1; from .hex via wordasm):
+
+  $ cat addvalues.hex
+  .8byte 0xD61F03C08B216000   // add x0, x0, x1 ; br x30
+  $ wordasm < addvalues.hex > prog.bin
+  $ arm64emu prog.bin 4 5
+
+Expect x0 to hold 9 (0x9) after the add. Final register dump appears on stderr.
+
+Common error messages (not exhaustive):
+
+- Unrecognized instruction [flags] — the 32-bit word at PC is not a valid instruction encoding (often: running a text/source file instead of assembled machine code, branching into data, or clobbering code with data).
+- Misaligned memory access — load/store or branch target address is not a multiple of 4.
+- Out of bounds memory access — address outside the allowed range (typically 0x00000000–0x00ffffff for arm64emu). Can follow bad stack use (e.g. sp near 0x01000000) or bad pointers.
+- Division by zero — divisor register was zero.
+- std::invalid_argument — raised when parsing simulator numeric input (non-decimal-integer arguments), not by the emulated program itself.

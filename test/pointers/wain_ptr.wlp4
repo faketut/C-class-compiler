@@ -1,0 +1,4 @@
+long wain(long* a, long b) {
+  *a = b;
+  return *a;
+}

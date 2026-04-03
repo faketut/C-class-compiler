@@ -1,0 +1,62 @@
+WLP4 Intermediate Format (.wlp4i)
+================================
+
+A `.wlp4i` file is a preorder serialization of a WLP4 parse tree (text).
+
+Structure
+---------
+
+- First line is always the start production: `start BOF procedures EOF`.
+- After any line that states a production `A → α`, the subtree for each symbol of `α` follows in order. If `α` is `.EMPTY`, nothing follows for that rule.
+- **Nonterminal node:** first line is the production used at that node; then each child subtree, left to right.
+- **Terminal node (token):** one line: `KIND lexeme` (token kind, space, lexeme).
+- **BOF / EOF:** single lines `BOF BOF` and `EOF EOF` respectively.
+
+Equivalently: preorder traversal—terminals print kind and lexeme; nonterminals print their expanding rule, then recurse on children.
+
+Example
+-------
+
+Program:
+
+  long wain(long foo, long bar) { return 42; }
+
+Scan (illustrative):
+
+  LONG long
+  WAIN wain
+  LPAREN (
+  …
+
+Parse (`.wlp4i`):
+
+start BOF procedures EOF
+BOF BOF
+procedures main
+main LONG WAIN LPAREN dcl COMMA dcl RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE
+LONG long
+WAIN wain
+LPAREN (
+dcl type ID
+type LONG
+LONG long
+ID foo
+COMMA ,
+dcl type ID
+type LONG
+LONG long
+ID bar
+RPAREN )
+LBRACE {
+dcls .EMPTY
+statements .EMPTY
+RETURN return
+expr term
+term factor
+factor NUM
+NUM 42
+SEMI ;
+RBRACE }
+EOF EOF
+
+See `wlp4ti.txt` for the typed variant (`.wlp4ti`).

@@ -1,0 +1,163 @@
+Context-Free Grammars and Parsing: File Formats
+===============================================
+
+Course tooling combines several tagged sections in one file. Each section starts with a header line; components that depend on a grammar appear after exactly one `.CFG` block. Files normally end with `.END`.
+
+
+.CFG — Grammar
+--------------
+
+After the header `.CFG`, each line is one production:
+
+  LHS  RHS_tokens...
+
+`LHS` is one symbol. `RHS_tokens` is whitespace-separated symbols, or the literal `.EMPTY` (empty right-hand side, ε). A symbol is any printable non-whitespace ASCII string other than `.EMPTY`.
+
+Rules imply: the start symbol is the LHS of the first rule; nonterminals are symbols that appear as some LHS; all other symbols that appear are terminals.
+
+Example (start `expr`):
+
+  expr → expr + term | term
+  term → term * factor | factor
+  factor → # | id
+
+.CFG
+expr expr + term
+expr term
+term term * factor
+term factor
+factor #
+factor id
+
+Epsilon:
+
+  S → (S)S | ε
+
+.CFG
+S ( S ) S
+S .EMPTY
+
+Keep spaces so `( S ) S` is four symbols, not one.
+
+
+.DERIVATION — Leftmost derivation
+---------------------------------
+
+After `.DERIVATION`, each line is one production (same format as in `.CFG`), in order of a **leftmost** expansion.
+
+1. First line: LHS must be the start symbol; the “sentence” is that rule’s RHS.
+2. Step n>1: LHS equals the **leftmost nonterminal** of the previous sentence; replace it with that rule’s RHS.
+3. After the last step, the sentence must be terminals only (possibly empty).
+
+Leading whitespace on lines is allowed (e.g. for indentation).
+
+Example for the `expr` grammar above:
+
+.DERIVATION
+expr expr + term
+ expr term
+  term factor
+   factor id
+ term term * factor
+  term factor
+   factor #
+  factor id
+
+This corresponds to a leftmost derivation of `id + # * id`.
+
+
+.INPUT — Token sequence
+-----------------------
+
+After `.INPUT`, terminals appear separated by whitespace (spaces and/or newlines). The whole section is **one** input string for the parser.
+
+Example grammar:
+
+.CFG
+S BOF expr EOF
+expr expr - term
+expr term
+term id
+term ( expr )
+
+Input `BOF id - ( id - id ) EOF` may be written on one line or split across lines; whitespace is ignored between tokens.
+
+
+.ACTIONS — Bottom-up parser steps
+---------------------------------
+
+After `.ACTIONS`, each line is one of:
+
+  shift
+  reduce n
+  print
+
+In `reduce n`, `n` is a rule index: first rule in `.CFG` is 0, next is 1, etc. Processing semantics follow the tool specification for that component.
+
+
+.TRANSITIONS — SLR(1) DFA edges
+-------------------------------
+
+After `.TRANSITIONS`, each line:
+
+  from_state  symbol  to_state
+
+`from_state` and `to_state` are non-negative integers; initial state is 0. `symbol` is a terminal or nonterminal from the grammar. Together with `.REDUCTIONS`, this encodes the SLR(1) parsing DFA.
+
+
+.REDUCTIONS — SLR(1) reduce items
+---------------------------------
+
+After `.REDUCTIONS`, each line:
+
+  state_number  rule_number  tag
+
+- State `state_number` has a complete item for production `rule_number` (same numbering as `.CFG`, from 0).
+- If `tag` is a terminal, it is a valid lookahead (in Follow of that rule’s LHS).
+- If `tag` is `.ACCEPT`, reduction in this state after input is exhausted accepts. `.ACCEPT` is never a grammar terminal.
+
+Example (grammar and DFA fragment):
+
+.CFG
+S BOF expr EOF
+expr expr - term
+expr term
+term id
+term ( expr )
+.TRANSITIONS
+0 BOF 6
+1 id 2
+1 ( 3
+1 term 8
+3 id 2
+3 ( 3
+3 term 4
+3 expr 7
+6 id 2
+6 ( 3
+6 term 4
+6 expr 10
+7 - 1
+7 ) 9
+10 - 1
+10 EOF 5
+.REDUCTIONS
+2 3 -
+2 3 )
+2 3 EOF
+4 2 -
+4 2 )
+4 2 EOF
+5 0 .ACCEPT
+8 1 -
+8 1 )
+8 1 EOF
+9 4 -
+9 4 )
+9 4 EOF
+
+
+.END
+----
+
+Not a grammar component; marks end of file so readers can stop cleanly.

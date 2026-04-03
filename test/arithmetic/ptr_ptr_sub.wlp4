@@ -1,0 +1,3 @@
+long wain(long* a, long b) {
+  return (a+3) - a;
+}

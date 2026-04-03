@@ -1,0 +1,207 @@
+WLP4 Programming Language Specification
+=======================================
+
+WLP4 is a strict subset of C++. A source file is a sequence of procedure definitions ending with the main procedure **`wain`**.
+
+
+Lexical syntax
+--------------
+
+Programs are tokens separated by whitespace (spaces, newlines, comments). Tokenization uses **longest-match** on the remaining input: accept the longest prefix that is a token or whitespace; repeat until EOF or error.
+
+**Keywords / reserved** (not `ID`): `wain`, `long`, `if`, `else`, `while`, `println`, `putchar`, `getchar`, `return`, `NULL`, `new`, `delete`.
+
+**Tokens**
+
+- **ID** — letter `[A-Za-z]` followed by letters/digits; not a reserved word.
+- **NUM** — one digit `0-9`, or two+ digits with first digit non-zero.
+- **Punctuation / operators** — `LPAREN` ( `RPAREN` ) `LBRACE` { `RBRACE` } `RETURN` return `IF` if `ELSE` else `WHILE` while `PRINTLN` println `PUTCHAR` putchar `GETCHAR` getchar `WAIN` wain `BECOMES` = `LONG` long `EQ` == `NE` != `LT` < `GT` > `LE` <= `GE` >= `PLUS` + `MINUS` - `STAR` * `SLASH` / `PCT` % `COMMA` , `SEMI` ; `NEW` new `DELETE` delete `LBRACK` [ `RBRACK` ] `AMP` & `NULL` NULL
+
+Letter tokens are case-sensitive (`long` is `LONG`, not `Long`).
+
+**Whitespace** — SPACE (32), TAB (9), NEWLINE (10), or **COMMENT**: `//` through the next newline.
+
+
+Context-free grammar
+--------------------
+
+**Terminals:** the token kinds above.
+
+**Nonterminals:** procedures, procedure, main, params, paramlist, type, dcl, dcls, statements, lvalue, expr, statement, test, term, factor, arglist.
+
+**Start symbol:** procedures.
+
+**Productions**
+
+procedures → procedure procedures
+procedures → main
+procedure → LONG ID LPAREN params RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE
+main → LONG WAIN LPAREN dcl COMMA dcl RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE
+params →
+params → paramlist
+paramlist → dcl
+paramlist → dcl COMMA paramlist
+type → LONG
+type → LONG STAR
+dcls →
+dcls → dcls dcl BECOMES NUM SEMI
+dcls → dcls dcl BECOMES NULL SEMI
+dcl → type ID
+statements →
+statements → statements statement
+statement → lvalue BECOMES expr SEMI
+statement → IF LPAREN test RPAREN LBRACE statements RBRACE ELSE LBRACE statements RBRACE
+statement → WHILE LPAREN test RPAREN LBRACE statements RBRACE
+statement → PRINTLN LPAREN expr RPAREN SEMI
+statement → PUTCHAR LPAREN expr RPAREN SEMI
+statement → DELETE LBRACK RBRACK expr SEMI
+test → expr EQ expr
+test → expr NE expr
+test → expr LT expr
+test → expr LE expr
+test → expr GE expr
+test → expr GT expr
+expr → term
+expr → expr PLUS term
+expr → expr MINUS term
+term → factor
+term → term STAR factor
+term → term SLASH factor
+term → term PCT factor
+factor → ID
+factor → NUM
+factor → NULL
+factor → LPAREN expr RPAREN
+factor → AMP lvalue
+factor → STAR factor
+factor → NEW LONG LBRACK expr RBRACK
+factor → GETCHAR LPAREN RPAREN
+factor → ID LPAREN RPAREN
+factor → ID LPAREN arglist RPAREN
+arglist → expr
+arglist → expr COMMA arglist
+lvalue → ID
+lvalue → STAR factor
+lvalue → LPAREN lvalue RPAREN
+
+
+Context-sensitive (semantic) constraints
+----------------------------------------
+
+Violations are **semantic errors**; the program is invalid.
+
+**Procedures**
+
+- A **procedure** is derived from `procedure` or `main`. Name: the `ID` in `procedure`, or `wain` for `main`. A procedure is **declared** from its first header occurrence.
+- No two procedures share a name.
+- A call (`factor → ID LPAREN …`) may only name a procedure **already declared** earlier in the source. No forward calls; hence no mutual recursion. `wain` cannot call itself (grammar prevents `WAIN` as call target).
+
+**Identifiers in procedures**
+
+- An `ID` in a `dcl` is **declared** in that procedure; uses are `ID` in `factor` / `lvalue`. Names are case-sensitive.
+- No duplicate declarations in the same procedure. An `ID` must be declared in the same procedure before use.
+- An `ID` may shadow a procedure name: inside `p`, a variable `x` hides procedure `x`. **Error:** if procedure `x` is called from `p` while a variable `x` is declared in `p`.
+
+Example (valid): `long p(long p) { return p; }` and `wain` calls `p(a)` — inside `p`, `p` is the parameter; in `wain`, `p` is the procedure.
+
+Example (invalid): `long wain(long a, long p) { return p(a); }` — `p` is a variable in `wain`, so `p(a)` is illegal.
+
+**Types**
+
+- Declared variables: `long` or `long*` from their `dcl`. Procedure names are untyped.
+- **Procedure signature:** ordered list of `long` / `long*` from `params` (possibly empty).
+
+**Types of `NUM`, `NULL`, `factor`, `term`, `expr`, `lvalue`**
+
+- `NUM` → `long`. `NULL` → `long*`.
+- `factor` from `NUM`/`NULL` → same as token. `factor` from `ID` (variable) → that variable’s type. `lvalue` from `ID` → same.
+- `LPAREN expr RPAREN` / parenthesized `lvalue` → inner type.
+- `AMP lvalue` → `long*`; inner `lvalue` must be `long`.
+- `STAR factor` (as factor or lvalue) → `long`; inner factor must be `long*`.
+- `NEW LONG LBRACK expr RBRACK` → `long*`; `expr` must be `long`.
+- `GETCHAR LPAREN RPAREN` → `long`.
+- `ID LPAREN RPAREN` → `long`; procedure has empty signature.
+- `ID LPAREN arglist RPAREN` → `long`; arity and argument types must match signature in order.
+- `term` from single `factor` → factor’s type. Other `term` productions → both operands `long`, result `long`.
+- `expr` from `term` → term’s type.
+- `expr PLUS term`: both `long`→`long`; `long*` + `long`→`long*`; `long` + `long*`→`long*`.
+- `expr MINUS term`: both `long`→`long`; `long*` − `long`→`long*`; both `long*`→`long`.
+
+**Additional constraints**
+
+- Second parameter of `main` must be `long` (not `long*`).
+- `RETURN expr` in `procedure` and `main`: `expr` must be `long`.
+- Assignment: `lvalue` and `expr` same type.
+- `PRINTLN` / `PUTCHAR`: `expr` is `long`.
+- `DELETE [] expr`: `expr` is `long*`.
+- `test`: both `expr` operands same type.
+- `dcl BECOMES NUM`: variable type is `long`. `dcl BECOMES NULL`: variable type is `long*`.
+
+
+Behaviour
+---------
+
+A program satisfying the rules above embeds as a fragment in a C++ **shell**; behaviour matches that combined program except where noted below.
+
+**Shell A — `wain(long, long)`**
+
+int wain(int, int);
+void println(int);
+int putchar(int);
+int getchar(void);
+
+// === Insert WLP4 Program Here ===
+
+#include <stdlib.h>
+#include <stdio.h>
+int main(int argc, char** argv) {
+  int a,b,c;
+  printf("Enter first integer: ");
+  scanf("%d", &a);
+  printf("Enter second integer: ");
+  scanf("%d", &b);
+  c = wain(a,b);
+  printf("wain returned %d\n", c);
+  return 0;
+}
+void println(int x){
+   printf("%d\n",x);
+}
+
+**Shell B — `wain(long*, long)`**
+
+int wain(int*, int);
+void println(int);
+int putchar(int);
+int getchar(void);
+
+// === Insert WLP4 Program Here ===
+
+#include <stdlib.h>
+#include <stdio.h>
+int main(int argc, char** argv) {
+  int l, c;
+  int* a;
+  printf("Enter length of array: ");
+  scanf("%d", &l);
+  a = (int*) malloc(l*sizeof(int));
+  for(int i = 0; i < l; i++) {
+    printf("Enter value of array element %d: ", i);
+    scanf("%d", a+i);
+  }
+  c = wain(a,l);
+  printf("wain returned %d\n", c);
+  return 0;
+}
+void println(int x){
+   printf("%d\n",x);
+}
+
+`putchar` / `getchar` follow the C library.
+
+**WLP4-specific behaviour**
+
+- **Failed `new`:** returns `NULL` (no exceptions).
+- **Dereference of NULL:** must crash the program.
+- **Out-of-bounds pointer arithmetic** (non-dereferencing): defined like in-bounds arithmetic (used for comparison tests). **Dereferencing** out-of-bounds pointers: undefined, as in C++.
+- Other undefined behaviour in C++ remains undefined in WLP4; a compiled program may diverge from the shells in those cases.

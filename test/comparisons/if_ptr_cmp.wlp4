@@ -1,0 +1,11 @@
+long wain(long* a, long b) {
+  long* last = NULL;
+  long ans = 0;
+  last = a+b-1;
+  if (a < last) {
+    ans = 241;
+  } else {
+    ans = 0;
+  }
+  return ans;
+}

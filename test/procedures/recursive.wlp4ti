@@ -1,0 +1,120 @@
+procedures procedure procedures
+procedure LONG ID LPAREN params RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE
+LONG long
+ID fact
+LPAREN (
+params paramlist
+paramlist dcl
+dcl type ID
+type LONG
+LONG long
+ID n : long
+RPAREN )
+LBRACE {
+dcls dcls dcl BECOMES NUM SEMI
+dcls .EMPTY
+dcl type ID
+type LONG
+LONG long
+ID r : long
+BECOMES =
+NUM 0 : long
+SEMI ;
+statements statements statement
+statements .EMPTY
+statement IF LPAREN test RPAREN LBRACE statements RBRACE ELSE LBRACE statements RBRACE
+IF if
+LPAREN (
+test expr EQ expr
+expr term : long
+term factor : long
+factor ID : long
+ID n : long
+EQ ==
+expr term : long
+term factor : long
+factor NUM : long
+NUM 0 : long
+RPAREN )
+LBRACE {
+statements statements statement
+statements .EMPTY
+statement lvalue BECOMES expr SEMI
+lvalue ID : long
+ID r : long
+BECOMES =
+expr term : long
+term factor : long
+factor NUM : long
+NUM 1 : long
+SEMI ;
+RBRACE }
+ELSE else
+LBRACE {
+statements statements statement
+statements .EMPTY
+statement lvalue BECOMES expr SEMI
+lvalue ID : long
+ID r : long
+BECOMES =
+expr term : long
+term term STAR factor : long
+term factor : long
+factor ID : long
+ID n : long
+STAR *
+factor ID LPAREN arglist RPAREN : long
+ID fact
+LPAREN (
+arglist expr
+expr expr MINUS term : long
+expr term : long
+term factor : long
+factor ID : long
+ID n : long
+MINUS -
+term factor : long
+factor NUM : long
+NUM 1 : long
+RPAREN )
+SEMI ;
+RBRACE }
+RETURN return
+expr term : long
+term factor : long
+factor ID : long
+ID r : long
+SEMI ;
+RBRACE }
+procedures main
+main LONG WAIN LPAREN dcl COMMA dcl RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE
+LONG long
+WAIN wain
+LPAREN (
+dcl type ID
+type LONG
+LONG long
+ID a : long
+COMMA ,
+dcl type ID
+type LONG
+LONG long
+ID b : long
+RPAREN )
+LBRACE {
+dcls .EMPTY
+statements .EMPTY
+RETURN return
+expr term : long
+term factor : long
+factor ID LPAREN arglist RPAREN : long
+ID fact
+LPAREN (
+arglist expr
+expr term : long
+term factor : long
+factor ID : long
+ID a : long
+RPAREN )
+SEMI ;
+RBRACE }
