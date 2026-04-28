@@ -66,6 +66,3 @@ test/          # *.wlp4 / *.wlp4ti by category; expected/ for goldens
 
 Issues and pull requests are welcome. Please keep changes focused; match existing style in `src/` and run `scripts/run-tests.sh` when you touch the compiler.
 
-## Acknowledgements
-
-WLP4 and related tooling names follow **University of Waterloo CS 241**–style conventions; this project is maintained independently for learning and experimentation.
